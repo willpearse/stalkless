@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>stalkless (install) - leaf analysis pipeline</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Will Pearse">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/css/docs.css" rel="stylesheet">
+    <link href="assets/js/google-code-prettify/prettify.css" rel="stylesheet">
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="assets/ico/favicon.ico">
+    <link rel="apple-touch-icon" href="assets/ico/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="assets/ico/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="assets/ico/apple-touch-icon-114x114.png">
+  </head>
+
+  <body data-spy="scroll" data-target=".subnav" data-offset="50">
+
+
+	  <!-- Navbar
+	    ================================================== -->
+	    <div class="navbar navbar-fixed-top">
+	      <div class="navbar-inner">
+	        <div class="container">
+	          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </a>
+	          <a class="brand" href="./index.html">stalkless</a>
+	          <div class="nav-collapse">
+	            <ul class="nav">
+	              <li class="">
+	                <a href="./index.html">Home</a>
+	              </li>
+	              <li class="active">
+	                <a href="./install.html">Install</a>
+	              </li>
+	              <li class="">
+	                <a href="./guide.html">Guide</a>
+	              </li>
+	              <li class="">
+	                <a href="./faq.html">FAQ</a>
+	              </li>
+	              <li class="">
+	                <a href="http://www.willpearse.com">Who?</a>
+	              </li>
+	            </ul>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+
+	    <div class="container">
+
+<!-- Masthead
+================================================== -->
+<header class="jumbotron subhead" id="overview">
+  <h1>Install</h1>
+  <p class="lead">Download everything in one click for Windows and Mac, or compile from source for everything else</p>
+  <div class="subnav">
+    <ul class="nav nav-pills">
+	  <li><a href="#oneClick">One-Click Install</a></li>
+	  <li><a href="#compiling">Compiling</a></li>
+    </ul>
+  </div>
+</header>
+
+
+<!-- oneClick
+================================================== -->
+<a name="oneClick"></a>
+<section id="oneClick">
+  <div class="page-header">
+    <h1>One-Click Install</h1>
+  </div>
+  <div class="row">
+    <div class="span4">
+      <h3>Windows</h3>
+      <p>Sorry, but I don't have access to a Windows computer with administrator privileges, so I can't set this up yet. The moment I can, I will!</p>
+    </div>
+    <div class="span4">
+      <h3>Mac OS</h3>
+      	<p><a href="https://www.dropbox.com/s/8ullha8o68ta2x0/stalkless.zip">Unzip this file</a>, then run './stalkless.app/Contents/MacOS/stalkless' from Terminal when in the directory you unzipped it all into.</p></div>
+    <div class="span4">
+      <h3>Linux</h3>
+      <p>Coming soon... For now you'll have to compile it by hand (see below). Sorry!</p>
+    </div>
+</section>
+
+
+<!-- Compiling
+================================================== -->
+<a name="compiling"></a>
+<section id="compiling">
+  <div class="page-header">
+    <h1>Compiling from Source</h1>
+  </div>
+  <div class="row">
+    <div class="span4">
+      <h3>Overview</h3>
+      <p>There're two main steps to this: setting up Python and the packages stalkless uses, and then setting up the two R packages. It's not technically challenging, but it is fiddly. Sorry!</p>
+	  <p>Once everything's set up, just run the file 'stalkless.py'. That's it!</p>
+    </div>
+    <div class="span4">
+      <h3>Python and its packages</h3>
+		<ol>
+		<li>Python. <a href="http://www.python.org/getit/">Grab the latest version of Python 2.7</a>. <b>Do not</b> download any Python version starting with a 3.</li>
+		<li>NumPy. <a href="http://sourceforge.net/projects/numpy/files/">Grab it from here</a> - make sure to get the version for Python 2.7, not 2.6 (SourceForge tends to take you there by default.)</li>
+		<li>SciPy. <a href="http://sourceforge.net/projects/scipy/files/">Grab it from here</a> - make sure to get the version for Python 2.7, not 2.6 (SourceForge tends to take you there by default.)</li>
+		<li>scikit-image. <a href="http://scikit-image.org/">Grab it from here</a>. You will likely need to install <a href="http://cython.org/">Cython</a> as well.</li>
+		</ol>
+    </div>
+    <div class="span4">
+      <h3>R packages</h3>
+      <p>This bit's easy! <a href="http://cran.r-project.org/">Install R</a> (...you've already got it though, right?...). Then just run <em>install.packages("Momocs", dependencies=TRUE)</em> and <em>install.packages("ReadImages", dependencies=TRUE)</em> in the console. Easy!</p>
+	<p>To run stalkless, just type <em>python stalkless.py</em> from the command prompt (Windows) or from Terminal (Linux). Under Windows, you may need to <a href="http://docs.python.org/2/using/windows.html#finding-the-python-executable">add Python to your Windows PATH</a>.</p>
+    </div>
+</section>
+
+ <!-- Footer
+  ================================================== -->
+  <footer class="footer">
+    <p class="pull-right"><a href="#">Back to top</a></p>
+	<p>&copy <a href="http://www.willpearse.com">Will Pearse</a> (2013), Post-doc in the Cavender-Bares Lab at the University of Minnesota.</p>
+    <p>Website (heavily) based on Twitter's Bootstrap - thank you! Bootstrap was built by <a href="http://twitter.com/mdo" target="_blank">@mdo</a> and <a href="http://twitter.com/fat" target="_blank">@fat</a>, their code licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License v2.0</a>.</p>
+  </footer>
+
+</div><!-- /container -->
+
+
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/google-code-prettify/prettify.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
+    <script src="assets/js/application.js"></script>
+
+
+  </body>
+</html>
