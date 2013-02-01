@@ -7,10 +7,8 @@
 #Headers
 import numpy as np
 from PIL import Image, ImageOps
-from skimage import data
 from scipy import ndimage
-from skimage.filter import canny
-import argparse, sys, os, pdb, subprocess
+import argparse, sys, os, subprocess
 from time import gmtime, strftime
 
 #MAIN
@@ -103,7 +101,7 @@ def saveFile(image, fileName, suffix="", checkName=True):
     if checkName:
         if fileName[-4:] == ".png" or fileName[-4:] == ".jpg" or fileName[-4:] == ".gif" or fileName[-4:] == ".bmp" or fileName[-4:] == ".png" or fileName[-4:] == ".jpe":
             fileName = fileName[:-4] + "_" + str(suffix) + ".jpg"
-        elif fileName[-5:] != ".jpeg":
+        elif fileName[-5:] == ".jpeg":
             fileName = fileName[:-5] + "_" + str(suffix) + ".jpg"
         else:
             fileName = fileName + "_" + str(suffix) + ".jpg"
