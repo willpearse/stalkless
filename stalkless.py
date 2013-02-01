@@ -153,6 +153,7 @@ def makeRScript(imageDir, outputDir):
         rScript.write("#Load images\n")
         rScript.write("images <- list.files('" + imageDir + "')\n")
         rScript.write("images <- images[!grepl('rScript.R', images, fixed=TRUE)]\n")
+        rScript.write("images <- images[!grepl('surfaceAreas.txt', images, fixed=TRUE)]\n")
         rScript.write("images <- paste('" + imageDir + "', images, sep='')\n")
         rScript.write("images <- import.jpg(images)\n")
         rScript.write("images <- Coo(images)\n")
