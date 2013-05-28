@@ -7,7 +7,7 @@
 #Headers
 import numpy as np
 from PIL import Image, ImageOps
-from scipy import ndimage
+from scipy import ndimage, misc
 import argparse, sys, os, subprocess
 from time import gmtime, strftime
 
@@ -23,6 +23,11 @@ def main():
         noObjects = args.noObjects
     else:
         noObjects = 0
+    
+    if args.maxObjects:
+        maxObjects = args.maxObjects
+    else:
+        maxObjects = 0
         
     if args.input[-1] != "/":
         args.input += "/"
@@ -58,7 +63,7 @@ def main():
     threshold_images = []
     os.chdir(args.input)
     for file in files:
-        threshold_images.append(thresholdImage(loadFile(file, exclusion), noObjects))
+        threshold_images.append(thresholdImage(loadFile(file, exclusion), noObjects, maxObjects))
 
     #Output
     print "Saving segmented images and surface areas..."
@@ -106,13 +111,12 @@ def saveFile(image, fileName, suffix="", checkName=True):
         else:
             fileName = fileName + "_" + str(suffix) + ".jpg"
             print "...", fileName, "is a JPEG - sorry about the weird filename"
-
-    Image.fromarray((1-np.uint8(image))*255).save(fileName, format="jpeg")
+    misc.imsave(fileName, (1-np.uint8(image))*255)
     return fileName
 
     
 #Thresholding
-def thresholdImage(image, nObjects=0):
+def thresholdImage(image, nObjects=0, maxObjects=0):
     threshold = np.mean(image) + np.std(image)
     thresh_image = image >= threshold
     label_objects, nb_labels = ndimage.label(thresh_image)
@@ -123,6 +127,14 @@ def thresholdImage(image, nObjects=0):
     
     if nObjects > 0:
         mask_sizes = np.array([x in sizes[sizes.argsort()][- nObjects:] for x in sizes])
+    elif maxObjects > 0:
+        mask_sizes = (len(sizes) -1 -sizes.argsort().argsort()) < maxObjects
+        #Ugh. There's got to be a better way than this...
+        sizeFilter = sizes > (np.mean(sizes) + np.std(image)*2)
+        for i in range(len(mask_sizes)):
+            if sizeFilter[i]==False:
+                mask_sizes[i]=0
+        
     else:
         mask_sizes = sizes > (np.mean(sizes) + np.std(image)*2)
     
@@ -176,6 +188,7 @@ if __name__ == '__main__':
 	parser.add_argument("-output", help="Working directory for all output files", required=True)
         parser.add_argument("-input", help="Folder containing nothing but input images", required=True)
         parser.add_argument("-noObjects", help="How many objects in each image?", type=int)
+        parser.add_argument("-maxObjects", help="Maximum number of objects in each image? (used in conjunction with image detection so you're not guaranteed this many images)", type=int)
         parser.add_argument("-exclusion", help="Comma-separated BOTTOM,LEFT,RIGHT,TOP no. of pixels to ignore in image")
         parser.add_argument("-analyseNow", action="store_true", help="Run R analysis script immediately (*highly* not recommended!")
 	main()
