@@ -8,7 +8,7 @@
 import numpy as np
 from PIL import Image, ImageOps
 from scipy import ndimage, misc
-import argparse, sys, os, subprocess
+import argparse, sys, os, subprocess, pdb
 from time import gmtime, strftime
 
 #MAIN
@@ -126,7 +126,7 @@ def thresholdImage(image, nObjects=0, maxObjects=0):
     #Else, (rather stupidly) assume that the distribution of label sizes will be skewed enough to allow you to ignore those above a certain size
     
     if nObjects > 0:
-        mask_sizes = np.array([x in sizes[sizes.argsort()][- nObjects:] for x in sizes])
+        mask_sizes = np.array([x in sizes[sizes.argsort()][- (nObjects+1):] for x in sizes])
     elif maxObjects > 0:
         mask_sizes = (len(sizes) -1 -sizes.argsort().argsort()) < maxObjects
         #Ugh. There's got to be a better way than this...
