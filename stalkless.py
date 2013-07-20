@@ -8,40 +8,70 @@
 import numpy as np
 from PIL import Image, ImageOps
 from scipy import ndimage, misc
-import argparse, sys, os, subprocess, pdb
+import argparse, sys, os, subprocess, platform
 from time import gmtime, strftime
 
 #MAIN
 def main():
+    #Figure out OS for directory listings, etc.
+    if platform.system() == "Windows":
+        os_directory_symbol = '\\'
+    else:
+        os_directory_symbol = "/"
     #Handle arguments
     args = parser.parse_args()
     if args.version:
-        print "0.1a"
+        print "0.2a"
         sys.exit()
-    
-    if args.noObjects:
-        noObjects = args.noObjects
-    else:
-        noObjects = 0
     
     if args.maxObjects:
         maxObjects = args.maxObjects
     else:
         maxObjects = 0
-        
-    if args.input[-1] != "/":
-        args.input += "/"
-    
-    if args.output[-1] != "/":
-        args.output += "/"
 
-    #Load in image files
-    try:
-        files = os.listdir(args.input)
-        files = [x for x in files if not x[0]=="."]
-    except:
-        print "ERROR: no valid input directory specified"
+    if args.input or args.files:
+        if args.input:
+            if args.input[-1] != os_directory_symbol:
+                args.input += os_directory_symbol
+            default_wd = args.input
+            try:
+                files = os.listdir(args.input)
+                files = [x for x in files if not x[0]=="."]
+            except:
+                print "ERROR: no valid input directory specified"
+                sys.exit()
+        if args.files:
+            default_wd = os.getcwd() + os_directory_symbol
+            try:
+                files = []
+                with open(args.files) as inputFiles:
+                    for each in inputFiles:
+                        files.append(each.strip())
+            except:
+                print "ERROR: can't load list of files to be read"
+                sys.exit()
+    else:
+        print "ERROR: must specify either an input directory, or a list of files to be read"
         sys.exit()
+    
+    
+    if args.output[-1] != os_directory_symbol:
+        args.output += os_directory_symbol
+
+    noObjects = []
+    if args.exactObjects:
+        try:
+            with open(args.exactObjects) as inputFiles:
+                for each in inputFiles:
+                    noObjects.append(int(each.strip()))
+        except:
+            print "ERROR: something went wrong loading how many objects in each image. Check file and location"
+            sys.exit()
+        if len(noObjects) != len(files):
+            print "ERROR: number of files does not match expected number of images in those files"
+            sys.exit()
+    else:
+        noObjects = [0 for x in range(len(files))]
     
     #Load 'exclusion' if necessary
     if args.exclusion:
@@ -56,23 +86,44 @@ def main():
     else:
         exclusion = 0
 
-    print "\nStalkess v0.1a - Will Pearse (will.pearse@gmail.com)\n"
-    
-    #Loop over files
-    print "Loading and processing images..."
-    threshold_images = []
-    os.chdir(args.input)
-    for file in files:
-        threshold_images.append(thresholdImage(loadFile(file, exclusion), noObjects, maxObjects))
+    print "\nStalkess v0.2a - Will Pearse (will.pearse@gmail.com)"
+    print " - remember to use *full* paths in all input, or you'll get strange errors!"
+    print " - I make no guarantees this software works! You have been warned!"
+    print ""
+    #Loop over files, so as to save memory (my laptop 'only' has 8Gb of RAM...)
+    print "Processing and segmenting images..."
+    #Setup
+    toolbar_width = 50
+    each_segment = len(files) / toolbar_width
+    #Beware if you've got fewer files than segments for the progress bar...
+    if each_segment == 0:
+        each_segment = 1
+    sys.stdout.write("[%s]" % (" " * toolbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width+1))
+    current_bar = 0
+    surface_areas = {}
+    for file_no,file_name in enumerate(files):
+        progress = file_no / each_segment
+        if progress != current_bar:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+        os.chdir(default_wd)
+        thresholded = thresholdImage(loadFile(file_name, exclusion), noObjects[file_no], maxObjects)
+        os.chdir(args.output)
+        for i,segImage in enumerate(segmentImage(thresholded)):
+            file_name = file_name.split(os_directory_symbol)[-1]
+            refName = saveFile(segImage, file_name, i)
+            surface_areas[refName] = np.sum(segImage != 0)
 
-    #Output
-    print "Saving segmented images and surface areas..."
+    sys.stdout.write(".\n")
+    #Write out the surface areas
+    print "Writing out surface areas..."
     os.chdir(args.output)
     with open("surfaceAreas.txt", "w") as saFile:
-        for fileName,inputImage in zip(files, threshold_images):
-            for i,segImage in enumerate(segmentImage(inputImage)):
-                refName = saveFile(segImage, fileName, i)
-                saFile.write(refName + "\t" + str(np.sum(segImage != 0)) + "\n")
+        for file_name,s_a in surface_areas.iteritems():
+            saFile.write(file_name + "\t" + str(s_a) + "\n")
+        
     
     #Create R script
     print "Creating R analysis script..."
@@ -164,8 +215,7 @@ def makeRScript(imageDir, outputDir):
         rScript.write("\n")
         rScript.write("#Load images\n")
         rScript.write("images <- list.files('" + imageDir + "')\n")
-        rScript.write("images <- images[!grepl('rScript.R', images, fixed=TRUE)]\n")
-        rScript.write("images <- images[!grepl('surfaceAreas.txt', images, fixed=TRUE)]\n")
+        rScript.write("images <- images[grepl('.jpg', images, fixed=TRUE)]\n")
         rScript.write("images <- paste('" + imageDir + "', images, sep='')\n")
         rScript.write("images <- import.jpg(images)\n")
         rScript.write("images <- Coo(images)\n")
@@ -186,9 +236,11 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="stalkless, or learn to stop worrying and love leaf morphometrics.", epilog="Written by Will Pearse (will.pearse@gmail.com) for the Cavender-Bares Lab")
 	parser.add_argument("--version", action="store_true", help="Display version information.")
 	parser.add_argument("-output", help="Working directory for all output files", required=True)
-        parser.add_argument("-input", help="Folder containing nothing but input images", required=True)
+        parser.add_argument("-input", help="Folder containing nothing but input images")
         parser.add_argument("-noObjects", help="How many objects in each image?", type=int)
         parser.add_argument("-maxObjects", help="Maximum number of objects in each image? (used in conjunction with image detection so you're not guaranteed this many images)", type=int)
-        parser.add_argument("-exclusion", help="Comma-separated BOTTOM,LEFT,RIGHT,TOP no. of pixels to ignore in image")
+        parser.add_argument("-exclusion", help="Comma-separated BOTTOM,LEFT,TOP,RIGHT no. of pixels to ignore in image")
         parser.add_argument("-analyseNow", action="store_true", help="Run R analysis script immediately (*highly* not recommended!")
+        parser.add_argument("-files", help="A file with each file to be loaded on a separate line")
+        parser.add_argument("-exactObjects", help="A file with the number of objects to be loaded in each file on each line. Must match '-files' or strange errors will occur!")
 	main()
