@@ -10,7 +10,10 @@ from PIL import Image, ImageOps
 from scipy import ndimage, misc
 import argparse, sys, os, subprocess, platform
 from time import gmtime, strftime
-
+from skimage.measure import perimeter, regionprops
+from skimage.morphology import convex_hull_image
+from math import pi
+import shutil
 #MAIN
 def main():
     #Figure out OS for directory listings, etc.
@@ -21,7 +24,7 @@ def main():
     #Handle arguments
     args = parser.parse_args()
     if args.version:
-        print "0.2a"
+        print "0.3"
         sys.exit()
     
     if args.maxObjects:
@@ -33,7 +36,7 @@ def main():
         if args.input:
             if args.input[-1] != os_directory_symbol:
                 args.input += os_directory_symbol
-            default_wd = args.input
+            default_wd = args.input + os_directory_symbol
             try:
                 files = os.listdir(args.input)
                 files = [x for x in files if not x[0]=="."]
@@ -57,6 +60,8 @@ def main():
     
     if args.output[-1] != os_directory_symbol:
         args.output += os_directory_symbol
+    output_dir = args.output
+    image_dir = args.output + "processed_images/"
 
     noObjects = []
     if args.exactObjects:
@@ -102,33 +107,46 @@ def main():
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width+1))
     current_bar = 0
-    surface_areas = {}
+    statistics = []
+    original_files = []
+    new_files = []
+    try:
+        os.mkdir(image_dir)
+    except OSError:
+        print "\nERROR: Cowardly refusing to overwrite existing stalkless output..."
+        sys.exit()
+    os.chdir(default_wd)
     for file_no,file_name in enumerate(files):
         progress = file_no / each_segment
         if progress != current_bar:
+            current_bar = progress
             sys.stdout.write(".")
             sys.stdout.flush()
-        os.chdir(default_wd)
         thresholded = thresholdImage(loadFile(file_name, exclusion), noObjects[file_no], maxObjects)
-        os.chdir(args.output)
+        os.chdir(image_dir)
         for i,segImage in enumerate(segmentImage(thresholded)):
+            if args.fill:
+                #Note: need to change internal structure for conv. hull method
+                segImage = convex_hull_image(np.array(segImage, order="C"))
             file_name = file_name.split(os_directory_symbol)[-1]
-            refName = saveFile(segImage, file_name, i)
-            surface_areas[refName] = np.sum(segImage != 0)
+            original_files.append(file_name)
+            new_files.append(saveFile(segImage, file_name, i))
+            statistics.append(morphologyStats(segImage))
 
     sys.stdout.write(".\n")
-    #Write out the surface areas
-    print "Writing out surface areas..."
-    os.chdir(args.output)
-    with open("surfaceAreas.txt", "w") as saFile:
-        for file_name,s_a in surface_areas.iteritems():
-            saFile.write(file_name + "\t" + str(s_a) + "\n")
-        
+    #Write out the statistics
+    print "Writing out statistics..."
+    os.chdir(output_dir)
+    with open("statistics.txt", "w") as saFile:
+        saFile.write("\t".join(["original.file", "seg.file", "perimeter", "surface.area", "dissection", "compactness"]))
+        for i,file_name in enumerate(original_files):
+            saFile.write("\t".join([file_name, new_files[i], "\t".join([str(statistics[i][0]),str(statistics[i][1]),str(statistics[i][2]),str(statistics[i][3])])]) + "\n")
+    
     
     #Create R script
     print "Creating R analysis script..."
-    os.chdir(args.output)
-    makeRScript(args.output, args.output)
+    os.chdir(output_dir)
+    makeRScript(image_dir, output_dir, default_wd)
 
     #Run R script
     if args.analyseNow:
@@ -144,10 +162,14 @@ def loadFile(fileName, exclusion=0):
     image = ImageOps.invert(image)
     image = np.array(image)
     if exclusion:
-        if exclusion[0]: image = image[:-exclusion[0],:]#Bottom
-        if exclusion[1]: image = image[:-exclusion[1],:]#Left
-        if exclusion[2]: image = image[exclusion[2]:,:]#Top
-        if exclusion[3]: image = image[exclusion[3]:,:]#Right
+        #Check dimensions of image match the exclusion
+        if exclusion[0]+exclusion[2] < image.shape[0] and exclusion[1]+exclusion[3] < image.shape[1]:
+            if exclusion[0]: image = image[:-exclusion[0],:]#Bottom
+            if exclusion[1]: image = image[:-exclusion[1],:]#Left
+            if exclusion[2]: image = image[exclusion[2]:,:]#Top
+            if exclusion[3]: image = image[exclusion[3]:,:]#Right
+        else:
+            print "\nImage", fileName, "too small to perform exclusion; processing unaltered"
     
     return image
 
@@ -204,31 +226,35 @@ def segmentImage(image):
     
     return outputImages
 
+def fillHoles(thresh_image, orig_image):
+    #Find background in original image
+    threshold = np.mean(image) + np.std(image)
+    thresh_image = image >= threshold
+    label_objects, nb_labels = ndimage.label(thresh_image)
+    sizes = np.bincount(label_objects.ravel())
+    sizes[0] = 0
+    #XOR the background from the image to find the holes
+    # - at some point in the future...
+
+#Calculate simple image statistics
+def morphologyStats(image):
+    perim = perimeter(image)
+    area = np.sum(image != 0)
+    dissection = (4 * area) / (perim ** 2)
+    compactness = (perim ** 2) / area
+    return (perim, area, dissection, compactness)
+
 #R Script
-def makeRScript(imageDir, outputDir):
-    with open("rScript.R", 'w') as rScript:
-        rScript.write("#Script automatically generated by stalkess - " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "\n")
-        rScript.write("\n")
-        rScript.write("#Headers\n")
-        rScript.write("library(Momocs)\n")
-        rScript.write("library(ReadImages)\n")
-        rScript.write("\n")
-        rScript.write("#Load images\n")
-        rScript.write("images <- list.files('" + imageDir + "')\n")
-        rScript.write("images <- images[grepl('.jpg', images, fixed=TRUE)]\n")
-        rScript.write("images <- paste('" + imageDir + "', images, sep='')\n")
-        rScript.write("images <- import.jpg(images)\n")
-        rScript.write("images <- Coo(images)\n")
-        rScript.write("\n")
-        rScript.write("#Fourier analysis\n")
-        rScript.write("fourier <- eFourier(images)\n")
-        rScript.write("hcontrib(fourier)\n")
-        rScript.write("\n")
-        rScript.write("#Outer edge lengths\n")
-        rScript.write("outer.edge <- sapply(images@coo, function(x) sum(sqrt((x[-1,1]-x[-nrow(x),1])^2 + (x[-1,2]-x[-nrow(x),2])^2)))\n")
-        rScript.write("\n")
-        rScript.write("#Save workspace\n")
-        rScript.write("save.image('" + outputDir + "workspace.RData')\n")
+def makeRScript(imageDir, outputDir, origDir):
+    date_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    r_template = "".join(open(origDir + 'r_template.R').readlines())
+    r_template = r_template.replace("DATETIME", date_time)
+    r_template = r_template.replace("IMAGEDIRECTORY", imageDir)
+    r_template = r_template.replace("OUTPUTDIRECTORY", outputDir)
+    shutil.copy(origDir+"stalkless_headers.R", outputDir+"stalkless_headers.R")
+    with open("fourier_script.R", 'w') as rScript:
+        rScript.write(r_template)
+
 
 
 #Argument parsing
@@ -243,4 +269,5 @@ if __name__ == '__main__':
         parser.add_argument("-analyseNow", action="store_true", help="Run R analysis script immediately (*highly* not recommended!")
         parser.add_argument("-files", help="A file with each file to be loaded on a separate line")
         parser.add_argument("-exactObjects", help="A file with the number of objects to be loaded in each file on each line. Must match '-files' or strange errors will occur!")
+        parser.add_argument("-fill", action="store_true", help="Fill holes in leaf using convex hull algorithm.")
 	main()
