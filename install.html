@@ -68,50 +68,20 @@
 ================================================== -->
 <header class="jumbotron subhead" id="overview">
   <h1>Install</h1>
-  <p class="lead">Download everything in one click for Windows and Mac, or compile from source for everything else</p>
-  <div class="subnav">
-    <ul class="nav nav-pills">
-	  <li><a href="#oneClick">One-Click Install</a></li>
-	  <li><a href="#compiling">Compiling</a></li>
-    </ul>
-  </div>
 </header>
-
-
-<!-- oneClick
-================================================== -->
-<a name="oneClick"></a>
-<section id="oneClick">
-  <div class="page-header">
-    <h1>One-Click Install</h1>
-  </div>
-  <div class="row">
-    <div class="span4">
-      <h3>Windows</h3>
-      <p>Sorry, but I don't have access to a Windows computer with administrator privileges, so I can't set this up yet. The moment I can, I will!</p>
-    </div>
-    <div class="span4">
-      <h3>Mac OS</h3>
-      	<p><a href="https://www.dropbox.com/s/8ullha8o68ta2x0/stalkless.zip">Unzip this file</a>, then run './stalkless.app/Contents/MacOS/stalkless' from Terminal when in the directory you unzipped it all into.</p></div>
-    <div class="span4">
-      <h3>Linux</h3>
-      <p>Coming soon... For now you'll have to compile it by hand (see below). Sorry!</p>
-    </div>
-</section>
-
 
 <!-- Compiling
 ================================================== -->
 <a name="compiling"></a>
 <section id="compiling">
   <div class="page-header">
-    <h1>Compiling from Source</h1>
+    <h1>How to</h1>
   </div>
   <div class="row">
     <div class="span4">
       <h3>Overview</h3>
       <p>There're two main steps to this: setting up Python and the packages stalkless uses, and then setting up the two R packages. It's not technically challenging, but it is fiddly. Sorry!</p>
-	  <p>Once everything's set up, just run the file 'stalkless.py'. That's it!</p>
+	<p>To run stalkless, just type <em>python stalkless.py</em> from the command prompt (Windows) or from Terminal (Mac/Linux). Under Windows, you may need to <a href="http://docs.python.org/2/using/windows.html#finding-the-python-executable">add Python to your Windows PATH</a>.</p>
     </div>
     <div class="span4">
       <h3>Python and its packages</h3>
@@ -124,8 +94,7 @@
     </div>
     <div class="span4">
       <h3>R packages</h3>
-      <p>This bit's easy! <a href="http://cran.r-project.org/">Install R</a> (...you've already got it though, right?...). Then just run <em>install.packages("Momocs", dependencies=TRUE)</em> and <em>install.packages("ReadImages", dependencies=TRUE)</em> in the console. Easy!</p>
-	<p>To run stalkless, just type <em>python stalkless.py</em> from the command prompt (Windows) or from Terminal (Linux). Under Windows, you may need to <a href="http://docs.python.org/2/using/windows.html#finding-the-python-executable">add Python to your Windows PATH</a>.</p>
+      <p>This bit's easy! <a href="http://cran.r-project.org/">Install R</a> (...you've already got it though, right?...). Then just run <em>install.packages("Momocs", dependencies=TRUE)</em>.</p>
     </div>
 </section>
 

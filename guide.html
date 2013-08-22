@@ -90,19 +90,31 @@
   <div class="row">
     <div class="span6">
 		<p>Once you've got stalkless installed, and you know how to run it (see the 'install' section), give it the arguments <em>-input FOLDER_NAME</em> to show it a folder containing nothing but images to be processed, and <em>-output FOLDER_NAME</em>  to specify where your output should be saved.</p>
-    	<p><a href="https://www.dropbox.com/s/6r30ur4f0p5bbbr/demoInput.zip">Try these example files out</a> - on my Mac, I type: <em>./stalkless.app/Contents/MacOS/stalkless -input /Users/will/demoInput -output /Users/will/demoOutput</em>. NOTE: all paths are absolute; that means they have to start with a '/' on Mac and Linux computers, and something like 'C:\' on a Windows computer.</p>
+    	<p><a href="https://www.dropbox.com/s/6r30ur4f0p5bbbr/demoInput.zip">Try these example files out</a> - on my computer, I type: <em>python stalkless -input /home/will/demoInput -output /home/will/demoOutput</em>. NOTE: all paths are absolute; that means they have to start with a '/' on Mac and Linux computers, and something like 'C:\' on a Windows computer.</p>
 		<p>If you get confused, run the program with only the argument <em>--help</em> to get... help.</p>
 		<p>All output is in terms of PIXELS. You can convert this to cm, mm, etc., by knowing the resolution at which each image was scanned.</p>
+		<p>To run Fourier analyses on your leaf scans, open up the file 'fourier_script.R' that will appear in your output directory once the script has run.</p>
 	</div>
     <div class="span6">
-		<p>There are three more arguments you might want to know about:</p>
+		<p>There are some arguments you might want to know about:</p>
 		<dl>
 			<dt>-noObjects</dt>
 			<p>Specify how many objects (leaves) are in each image. Tends to improve image detection.</p>
+			<dt>-exactObjects</dt>
+			<p>The number of objects in each file on each line (nothing else). Must match the alphabetical order of files given with -input or the order of files in -files or strange errors will occur!</p>
+			<dt>-maxObjects</dt>
+			<p>At most (there may be fewer), there are this number of objects (leaves) in each image. Tends to improve image detection.</p>
+<p></p>
+
 			<dt>-exclusion</dt>
 			<p>A comma-separate list (no spaces) of how many pixels to ignore when loading files. In the example, I use this to cut out the information about what the leaves are. This makes it much easier to detect the leaves!</p>
 			<dt>-analyseNow</dt>
 			<p>Attempt to run the R script the program generates immediately. This will likely crash the program - unless the image segmentation went perfectly, you'll likely have one or two images that are no really leaves. Check you image files, then run the R script.</p>
+			<dt>-fill</dt>
+			<p>Use a convex hull algorithm to fill in holes within the leaf. This isn't the best way of doing this; this will cause weird alterations to leaf shape in leaves with intricate edges. Check your output!</p>
+			<dt>-files</dt>
+			<p>Instead of analysing everything in a certain folder, analyse only these files. Each must contain the full, absolute path to that file!</p>
+
 		</dl>
     </div>
     <div class="span4">
