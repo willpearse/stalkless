@@ -13,7 +13,7 @@ from time import gmtime, strftime
 from skimage.measure import perimeter, regionprops
 from skimage.morphology import convex_hull_image
 from math import pi
-import shutil
+import shutil, pdb
 #MAIN
 def main():
     #Figure out OS for directory listings, etc.
@@ -21,6 +21,9 @@ def main():
         os_directory_symbol = '\\'
     else:
         os_directory_symbol = "/"
+    
+    #Store starting working directory
+    default_wd = os.getcwd() + os_directory_symbol
     #Handle arguments
     args = parser.parse_args()
     if args.version:
@@ -36,15 +39,14 @@ def main():
         if args.input:
             if args.input[-1] != os_directory_symbol:
                 args.input += os_directory_symbol
-            default_wd = args.input + os_directory_symbol
             try:
                 files = os.listdir(args.input)
                 files = [x for x in files if not x[0]=="."]
+                input_dir = args.input
             except:
                 print "ERROR: no valid input directory specified"
                 sys.exit()
         if args.files:
-            default_wd = os.getcwd() + os_directory_symbol
             try:
                 files = []
                 with open(args.files) as inputFiles:
@@ -64,6 +66,10 @@ def main():
     image_dir = args.output + "processed_images/"
 
     noObjects = []
+    if args.noObjects and args.exactObjects:
+        print "ERROR: Cannot specify a file with number of objects and the number of objects!"
+        sys.exit()
+    
     if args.exactObjects:
         try:
             with open(args.exactObjects) as inputFiles:
@@ -75,6 +81,8 @@ def main():
         if len(noObjects) != len(files):
             print "ERROR: number of files does not match expected number of images in those files"
             sys.exit()
+    elif args.noObjects:
+        noObjects = [int(args.noObjects) for x in range(len(files))]
     else:
         noObjects = [0 for x in range(len(files))]
     
@@ -115,13 +123,14 @@ def main():
     except OSError:
         print "\nERROR: Cowardly refusing to overwrite existing stalkless output..."
         sys.exit()
-    os.chdir(default_wd)
+    
     for file_no,file_name in enumerate(files):
         progress = file_no / each_segment
         if progress != current_bar:
             current_bar = progress
             sys.stdout.write(".")
             sys.stdout.flush()
+	os.chdir(input_dir)
         thresholded = thresholdImage(loadFile(file_name, exclusion), noObjects[file_no], maxObjects)
         os.chdir(image_dir)
         for i,segImage in enumerate(segmentImage(thresholded)):
