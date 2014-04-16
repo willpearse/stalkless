@@ -213,10 +213,11 @@ def thresholdImage(image, nObjects=0, maxObjects=0):
         mask_sizes = (len(sizes) -1 -sizes.argsort().argsort()) < maxObjects
         #Ugh. There's got to be a better way than this...
         sizeFilter = sizes > (np.mean(sizes) + np.std(image)*2)
+
         for i in range(len(mask_sizes)):
             if sizeFilter[i]==False:
                 mask_sizes[i]=0
-        
+    
     else:
         mask_sizes = sizes > (np.mean(sizes) + np.std(image)*2)
     
@@ -227,6 +228,7 @@ def segmentImage(image):
     label_objects, nb_labels = ndimage.label(image)
     sizes = np.bincount(label_objects.ravel())
     outputImages = []
+    #Loop over images, ignoring the background
     for i in range(2, nb_labels+1):
         temp = label_objects ==i
         temp = temp[:, np.sum(temp, axis=0)>0]
@@ -265,6 +267,16 @@ def makeRScript(imageDir, outputDir, origDir):
         rScript.write(r_template)
 
 
+import matplotlib.pyplot as plt
+#thresh = thresholdImage(file)
+sx = ndimage.sobel(close_img, axis=0, mode='constant')
+sy = ndimage.sobel(close_img, axis=1, mode='constant')
+sob = np.hypot(sx, sy)
+        
+plt.imshow(sob)
+plt.show()
+
+        
 
 #Argument parsing
 if __name__ == '__main__':
