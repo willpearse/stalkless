@@ -85,11 +85,11 @@ import.jpg.stalkless <- function (jpg.list)
   return(res)
 }
 
-check.images <- function(image.files){
+check.images <- function(image.files, nb.h=32){
   good.files <- rep(FALSE, length(image.files))
   for(i in seq_along(image.files)){
     try({
-      eFourier(Coo(image.files[i]))
+      eFourier(Coo(image.files[i]), nb.h=32)
       good.files[i] <- TRUE
     }, silent=TRUE)
   }

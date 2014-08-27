@@ -1,0 +1,31 @@
+#Basic stalkless testing
+#Will Pearse - 2014-08-27
+
+#Setup
+import pytest, sys
+sys.path.append("..")
+from stalkless import *
+
+def test_loadFile():
+    image, resolution = loadFile("demoInput/TC.Agr_ten.1.7.png")
+    assert resolution == 200
+    assert image.shape == (2800,1702)
+    assert image.max() == 227
+    assert image.min() == 0
+    
+    
+
+
+
+
+
+
+
+
+    muscle = alignSequences(seqs)
+    assert isinstance(muscle, list)
+    assert isinstance(muscle[0], list)
+    assert len(muscle) == 1
+    assert len(muscle[0]) == 1
+    assert isinstance(muscle[0][0], MultipleSeqAlignment)
+    assert muscle[0][0].get_alignment_length() == 1671

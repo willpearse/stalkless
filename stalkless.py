@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-#First draft of pipeline
-#Will Pearse - 01/28/2013
-
 #Headers
 import numpy as np
 from PIL import Image, ImageOps
@@ -34,7 +31,12 @@ def main():
         maxObjects = args.maxObjects
     else:
         maxObjects = 0
-
+    
+    if args.failObjects:
+        failObjects = args.failObjects
+    else:
+        failObjects = None
+    
     if args.input or args.files:
         if args.input:
             if args.input[-1] != os_directory_symbol:
@@ -99,7 +101,7 @@ def main():
     else:
         exclusion = 0
 
-    print "\nStalkess v0.2a - Will Pearse (will.pearse@gmail.com)"
+    print "\nStalkess v0.3 - Will Pearse (will.pearse@gmail.com)"
     print " - remember to use *full* paths in all input, or you'll get strange errors!"
     print " - I make no guarantees this software works! You have been warned!"
     print ""
@@ -130,24 +132,29 @@ def main():
             current_bar = progress
             sys.stdout.write(".")
             sys.stdout.flush()
-	os.chdir(input_dir)
-        thresholded = thresholdImage(loadFile(file_name, exclusion), noObjects[file_no], maxObjects)
+        if args.input:
+            os.chdir(input_dir)
+        image, resolution = loadFile(file_name, exclusion)
+        thresholded = thresholdImage(image, noObjects[file_no], maxObjects)
         os.chdir(image_dir)
-        for i,segImage in enumerate(segmentImage(thresholded)):
-            if args.fill:
-                #Note: need to change internal structure for conv. hull method
-                segImage = convex_hull_image(np.array(segImage, order="C"))
-            file_name = file_name.split(os_directory_symbol)[-1]
-            original_files.append(file_name)
-            new_files.append(saveFile(segImage, file_name, i))
-            statistics.append(morphologyStats(segImage))
-
+        try:
+            for i,segImage in enumerate(segmentImage(thresholded)):
+                if args.fill:
+                    #Note: need to change internal structure for conv. hull method
+                    segImage = convex_hull_image(np.array(segImage, order="C"))
+                file_name = file_name.split(os_directory_symbol)[-1]
+                original_files.append(file_name)
+                new_files.append(saveFile(segImage, file_name, i))
+                statistics.append(morphologyStats(segImage, resolution))
+        except RuntimeError:
+            print "failObjects threshold reached for", file_name, "..."
+    
     sys.stdout.write(".\n")
     #Write out the statistics
     print "Writing out statistics..."
     os.chdir(output_dir)
     with open("statistics.txt", "w") as saFile:
-        saFile.write("\t".join(["original.file", "seg.file", "perimeter", "surface.area", "dissection", "compactness"]))
+        saFile.write("\t".join(["original.file", "seg.file", "perimeter", "surface.area", "dissection", "compactness"])+"\n")
         for i,file_name in enumerate(original_files):
             saFile.write("\t".join([file_name, new_files[i], "\t".join([str(statistics[i][0]),str(statistics[i][1]),str(statistics[i][2]),str(statistics[i][3])])]) + "\n")
     
@@ -156,31 +163,32 @@ def main():
     print "Creating R analysis script..."
     os.chdir(output_dir)
     makeRScript(image_dir, output_dir, default_wd)
-
+    
     #Run R script
     if args.analyseNow:
         print "Running R analysis script..."
         print "\t...this will likely crash. You were warned!"
         subprocess.call(['R', 'CMD', 'BATCH', 'rScript.R'])
-
-    print "Finished!\n"
     
+    print "Finished!\n"
+
 #Loading
 def loadFile(fileName, exclusion=0):
     image = Image.open(fileName).convert("L")
+    resolution = image.info['dpi']
     image = ImageOps.invert(image)
     image = np.array(image)
     if exclusion:
         #Check dimensions of image match the exclusion
         if exclusion[0]+exclusion[2] < image.shape[0] and exclusion[1]+exclusion[3] < image.shape[1]:
             if exclusion[0]: image = image[:-exclusion[0],:]#Bottom
-            if exclusion[1]: image = image[:-exclusion[1],:]#Left
+            if exclusion[1]: image = image[:,:-exclusion[1]]#Left
             if exclusion[2]: image = image[exclusion[2]:,:]#Top
-            if exclusion[3]: image = image[exclusion[3]:,:]#Right
+            if exclusion[3]: image = image[:,exclusion[3]:]#Right
         else:
             print "\nImage", fileName, "too small to perform exclusion; processing unaltered"
     
-    return image
+    return image, resolution[0]
 
 #Saving
 def saveFile(image, fileName, suffix="", checkName=True):
@@ -213,7 +221,6 @@ def thresholdImage(image, nObjects=0, maxObjects=0):
         mask_sizes = (len(sizes) -1 -sizes.argsort().argsort()) < maxObjects
         #Ugh. There's got to be a better way than this...
         sizeFilter = sizes > (np.mean(sizes) + np.std(image)*2)
-
         for i in range(len(mask_sizes)):
             if sizeFilter[i]==False:
                 mask_sizes[i]=0
@@ -224,8 +231,10 @@ def thresholdImage(image, nObjects=0, maxObjects=0):
     return mask_sizes[label_objects]
 
 #Segmenting before output
-def segmentImage(image):
+def segmentImage(image, failThresh=None):
     label_objects, nb_labels = ndimage.label(image)
+    if failThresh != None and len(nb_labels) >= failThresh:
+        raise RuntimeError
     sizes = np.bincount(label_objects.ravel())
     outputImages = []
     #Loop over images, ignoring the background
@@ -248,9 +257,9 @@ def fillHoles(thresh_image, orig_image):
     # - at some point in the future...
 
 #Calculate simple image statistics
-def morphologyStats(image):
-    perim = perimeter(image)
-    area = np.sum(image != 0)
+def morphologyStats(image, res):
+    perim = (float(perimeter(image)) / res) * (2.0 + 35.0/64.0)
+    area = (float(np.sum(image != 0)) / (res**2)) * ((2.0 + 35.0/64.0)**2)
     dissection = (4 * area) / (perim ** 2)
     compactness = (perim ** 2) / area
     return (perim, area, dissection, compactness)
@@ -266,18 +275,6 @@ def makeRScript(imageDir, outputDir, origDir):
     with open("fourier_script.R", 'w') as rScript:
         rScript.write(r_template)
 
-
-import matplotlib.pyplot as plt
-#thresh = thresholdImage(file)
-sx = ndimage.sobel(close_img, axis=0, mode='constant')
-sy = ndimage.sobel(close_img, axis=1, mode='constant')
-sob = np.hypot(sx, sy)
-        
-plt.imshow(sob)
-plt.show()
-
-        
-
 #Argument parsing
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="stalkless, or learn to stop worrying and love leaf morphometrics.", epilog="Written by Will Pearse (will.pearse@gmail.com) for the Cavender-Bares Lab")
@@ -291,4 +288,9 @@ if __name__ == '__main__':
         parser.add_argument("-files", help="A file with each file to be loaded on a separate line")
         parser.add_argument("-exactObjects", help="A file with the number of objects to be loaded in each file on each line. Must match '-files' or strange errors will occur!")
         parser.add_argument("-fill", action="store_true", help="Fill holes in leaf using convex hull algorithm.")
+        parser.add_argument("-failObjects", help="Abort processing image if this many potential images detected")
 	main()
+
+
+#thresholded = thresholdImage(loadFile("/home/will/Documents/leaves/raw_data/Sam_et_al/Minnesota/MinnesotaScans/Minneota_A 03-06-2013 1.png"))
+        
