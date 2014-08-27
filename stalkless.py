@@ -10,7 +10,7 @@ from time import gmtime, strftime
 from skimage.measure import perimeter, regionprops
 from skimage.morphology import convex_hull_image
 from math import pi
-import shutil, pdb
+import shutil
 #MAIN
 def main():
     #Figure out OS for directory listings, etc.

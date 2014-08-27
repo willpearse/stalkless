@@ -4,6 +4,7 @@
 #Setup
 import pytest, sys
 sys.path.append("..")
+sys.path.append(".")
 from stalkless import *
 
 def test_loadFile():

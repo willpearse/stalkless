@@ -1,0 +1,7 @@
+numpy
+scipy
+PIL
+argparse
+skimage
+skimage
+pytest
