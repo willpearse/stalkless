@@ -1,7 +1,9 @@
 language: python
 python:
   - 2.7
-install: pip install -r requirements.txt
+install: 
+  - pip install -r requirements.txt
+  - pip install PIL --allow-external PIL --allow-unverified PIL
 script:
   - cd tests
   - py.test tests.py
