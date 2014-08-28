@@ -1,5 +1,5 @@
 numpy
 scipy
 argparse
-skimage
+scikit-image
 pytest
