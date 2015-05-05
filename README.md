@@ -1,7 +1,7 @@
 stalkless
 =========
 Will Pearse (wdpearse@umn.edu)
-[![Build Status](https://travis-ci.org/willpearse/stalkless.svg?branch=master)](https://travis-ci.org/willpearse/stalkless)
+[![DOI](https://zenodo.org/badge/4348/willpearse/stalkless.svg)](http://dx.doi.org/10.5281/zenodo.17364)
 
 This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
 
