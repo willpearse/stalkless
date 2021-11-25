@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 #Headers
@@ -11,6 +11,9 @@ from skimage.measure import perimeter, regionprops
 from skimage.morphology import convex_hull_image
 from math import pi
 import shutil
+import imageio
+import pdb
+
 #MAIN
 def main():
     #Figure out OS for directory listings, etc.
@@ -24,7 +27,7 @@ def main():
     #Handle arguments
     args = parser.parse_args()
     if args.version:
-        print "0.3"
+        print("0.3")
         sys.exit()
     
     if args.maxObjects:
@@ -46,7 +49,7 @@ def main():
                 files = [x for x in files if not x[0]=="."]
                 input_dir = args.input
             except:
-                print "ERROR: no valid input directory specified"
+                print("ERROR: no valid input directory specified")
                 sys.exit()
         if args.files:
             try:
@@ -55,10 +58,10 @@ def main():
                     for each in inputFiles:
                         files.append(each.strip())
             except:
-                print "ERROR: can't load list of files to be read"
+                print("ERROR: can't load list of files to be read")
                 sys.exit()
     else:
-        print "ERROR: must specify either an input directory, or a list of files to be read"
+        print("ERROR: must specify either an input directory, or a list of files to be read")
         sys.exit()
     
     
@@ -69,7 +72,7 @@ def main():
 
     noObjects = []
     if args.noObjects and args.exactObjects:
-        print "ERROR: Cannot specify a file with number of objects and the number of objects!"
+        print("ERROR: Cannot specify a file with number of objects and the number of objects!")
         sys.exit()
     
     if args.exactObjects:
@@ -78,10 +81,10 @@ def main():
                 for each in inputFiles:
                     noObjects.append(int(each.strip()))
         except:
-            print "ERROR: something went wrong loading how many objects in each image. Check file and location"
+            print("ERROR: something went wrong loading how many objects in each image. Check file and location")
             sys.exit()
         if len(noObjects) != len(files):
-            print "ERROR: number of files does not match expected number of images in those files"
+            print("ERROR: number of files does not match expected number of images in those files")
             sys.exit()
     elif args.noObjects:
         noObjects = [int(args.noObjects) for x in range(len(files))]
@@ -93,20 +96,20 @@ def main():
         try:
             exclusion = [int(x) for x in args.exclusion.split(",")]
             if len(exclusion) != 4:
-                print "ERROR: invalid exclusion format. Remember to put in zero-length values too!"
+                print("ERROR: invalid exclusion format. Remember to put in zero-length values too!")
                 sys.exit()
         except:
-            print "ERROR: invalid exclusion format. Remember to put in zero-length values too!"
+            print("ERROR: invalid exclusion format. Remember to put in zero-length values too!")
             sys.exit()
     else:
         exclusion = 0
 
-    print "\nStalkess v0.3 - Will Pearse (will.pearse@gmail.com)"
-    print " - remember to use *full* paths in all input, or you'll get strange errors!"
-    print " - I make no guarantees this software works! You have been warned!"
-    print ""
+    print("\nStalkess v0.3 - Will Pearse (will.pearse@gmail.com)")
+    print(" - remember to use *full* paths in all input, or you'll get strange errors!")
+    print(" - I make no guarantees this software works! You have been warned!")
+    print("")
     #Loop over files, so as to save memory (my laptop 'only' has 8Gb of RAM...)
-    print "Processing and segmenting images..."
+    print("Processing and segmenting images...")
     #Setup
     toolbar_width = 50
     each_segment = len(files) / toolbar_width
@@ -123,7 +126,7 @@ def main():
     try:
         os.mkdir(image_dir)
     except OSError:
-        print "\nERROR: Cowardly refusing to overwrite existing stalkless output..."
+        print("\nERROR: Cowardly refusing to overwrite existing stalkless output...")
         sys.exit()
     
     for file_no,file_name in enumerate(files):
@@ -147,11 +150,11 @@ def main():
                 new_files.append(saveFile(segImage, file_name, i))
                 statistics.append(morphologyStats(segImage, resolution))
         except RuntimeError:
-            print "failObjects threshold reached for", file_name, "..."
+            print("failObjects threshold reached for", file_name, "...")
     
     sys.stdout.write(".\n")
     #Write out the statistics
-    print "Writing out statistics..."
+    print("Writing out statistics...")
     os.chdir(output_dir)
     with open("statistics.txt", "w") as saFile:
         saFile.write("\t".join(["original.file", "seg.file", "perimeter", "surface.area", "dissection", "compactness"])+"\n")
@@ -160,17 +163,17 @@ def main():
     
     
     #Create R script
-    print "Creating R analysis script..."
+    print("Creating R analysis script...")
     os.chdir(output_dir)
     makeRScript(image_dir, output_dir, default_wd)
     
     #Run R script
     if args.analyseNow:
-        print "Running R analysis script..."
-        print "\t...this will likely crash. You were warned!"
+        print("Running R analysis script...")
+        print("\t...this will likely crash. You were warned!")
         subprocess.call(['R', 'CMD', 'BATCH', 'rScript.R'])
     
-    print "Finished!\n"
+    print("Finished!\n")
 
 #Loading
 def loadFile(fileName, exclusion=0):
@@ -186,7 +189,7 @@ def loadFile(fileName, exclusion=0):
             if exclusion[2]: image = image[exclusion[2]:,:]#Top
             if exclusion[3]: image = image[:,exclusion[3]:]#Right
         else:
-            print "\nImage", fileName, "too small to perform exclusion; processing unaltered"
+            print("\nImage", fileName, "too small to perform exclusion; processing unaltered")
     
     return image, resolution[0]
 
@@ -200,8 +203,8 @@ def saveFile(image, fileName, suffix="", checkName=True):
             fileName = fileName[:-5] + "_" + str(suffix) + ".jpg"
         else:
             fileName = fileName + "_" + str(suffix) + ".jpg"
-            print "...", fileName, "is a JPEG - sorry about the weird filename"
-    misc.imsave(fileName, (1-np.uint8(image))*255)
+            print("...", fileName, "is a JPEG - sorry about the weird filename")
+    imageio.imwrite(fileName, (1-np.uint8(image))*255)
     return fileName
 
     
@@ -238,7 +241,7 @@ def segmentImage(image, failThresh=None):
     sizes = np.bincount(label_objects.ravel())
     outputImages = []
     #Loop over images, ignoring the background
-    for i in range(2, nb_labels+1):
+    for i in range(1, nb_labels+1):
         temp = label_objects ==i
         temp = temp[:, np.sum(temp, axis=0)>0]
         temp = temp[np.sum(temp, axis=1)>0,:]
@@ -277,19 +280,19 @@ def makeRScript(imageDir, outputDir, origDir):
 
 #Argument parsing
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description="stalkless, or learn to stop worrying and love leaf morphometrics.", epilog="Written by Will Pearse (will.pearse@gmail.com) for the Cavender-Bares Lab")
-	parser.add_argument("--version", action="store_true", help="Display version information.")
-	parser.add_argument("-output", help="Working directory for all output files", required=True)
-        parser.add_argument("-input", help="Folder containing nothing but input images")
-        parser.add_argument("-noObjects", help="How many objects in each image?", type=int)
-        parser.add_argument("-maxObjects", help="Maximum number of objects in each image? (used in conjunction with image detection so you're not guaranteed this many images)", type=int)
-        parser.add_argument("-exclusion", help="Comma-separated BOTTOM,LEFT,TOP,RIGHT no. of pixels to ignore in image")
-        parser.add_argument("-analyseNow", action="store_true", help="Run R analysis script immediately (*highly* not recommended!")
-        parser.add_argument("-files", help="A file with each file to be loaded on a separate line")
-        parser.add_argument("-exactObjects", help="A file with the number of objects to be loaded in each file on each line. Must match '-files' or strange errors will occur!")
-        parser.add_argument("-fill", action="store_true", help="Fill holes in leaf using convex hull algorithm.")
-        parser.add_argument("-failObjects", help="Abort processing image if this many potential images detected")
-	main()
+    parser = argparse.ArgumentParser(description="stalkless, or learn to stop worrying and love leaf morphometrics.", epilog="Written by Will Pearse (will.pearse@gmail.com) for the Cavender-Bares Lab")
+    parser.add_argument("--version", action="store_true", help="Display version information.")
+    parser.add_argument("-output", help="Working directory for all output files", required=True)
+    parser.add_argument("-input", help="Folder containing nothing but input images")
+    parser.add_argument("-noObjects", help="How many objects in each image?", type=int)
+    parser.add_argument("-maxObjects", help="Maximum number of objects in each image? (used in conjunction with image detection so you're not guaranteed this many images)", type=int)
+    parser.add_argument("-exclusion", help="Comma-separated BOTTOM,LEFT,TOP,RIGHT no. of pixels to ignore in image")
+    parser.add_argument("-analyseNow", action="store_true", help="Run R analysis script immediately (*highly* not recommended!")
+    parser.add_argument("-files", help="A file with each file to be loaded on a separate line")
+    parser.add_argument("-exactObjects", help="A file with the number of objects to be loaded in each file on each line. Must match '-files' or strange errors will occur!")
+    parser.add_argument("-fill", action="store_true", help="Fill holes in leaf using convex hull algorithm.")
+    parser.add_argument("-failObjects", help="Abort processing image if this many potential images detected")
+    main()
 
 
 #thresholded = thresholdImage(loadFile("/home/will/Documents/leaves/raw_data/Sam_et_al/Minnesota/MinnesotaScans/Minneota_A 03-06-2013 1.png"))
